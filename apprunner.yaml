@@ -8,4 +8,4 @@ run:
   command: ./server
   runtime-version: 1.18.7
   network:
-    prot: 3000
+    port: 3000
