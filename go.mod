@@ -1,5 +1,6 @@
 module tds_server
 
+go 1.18
 
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect
