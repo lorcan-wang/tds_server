@@ -3,9 +3,8 @@ runtime: go
 build:
   commands:
     build: go build -o server main.go
-  run:
-    runtime-version: 1.24.0
-    command: ./server
-    network:
-      prot: 3000
-      
+run:
+  runtime-version: 1.24.0
+  command: ./server
+  network:
+    prot: 3000
