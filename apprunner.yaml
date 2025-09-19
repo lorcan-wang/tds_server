@@ -1,8 +1,9 @@
-version: 1.4
+version: 1.5
 runtime: go1
 build:
   commands:
     build:
+      - go mod tidy
       - go build main.go
 run:
   command: ./main
