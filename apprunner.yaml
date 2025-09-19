@@ -1,9 +1,10 @@
-version: 1
+version: 1.1
 runtime: go1
 build:
   commands:
     build: go build -o server main.go
 run:
   command: ./server
+  runtime-version: 1.18.7
   network:
     prot: 3000
