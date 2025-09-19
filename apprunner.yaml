@@ -1,11 +1,11 @@
-version: 1.3
+version: 1.4
 runtime: go1
 build:
   commands:
-    build: 
-      - go build -o server main.go
+    build:
+      - go build main.go
 run:
-  command: ./server
+  command: ./main
   runtime-version: 1.18.7
   network:
     port: 3000
