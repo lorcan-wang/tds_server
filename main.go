@@ -23,7 +23,7 @@ var (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Warning: Error loading .env file")
 	}
 	teslaClientID = os.Getenv("TESLA_CLIENT_ID")
 	teslaClientSecret = os.Getenv("TESLA_CLIENT_SECRET")
@@ -35,18 +35,22 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/login", func(c *gin.Context) {
-		oauthUrl := fmt.Sprintf("%s?&client_id=%s&redirect_uri=%s&response_type=code&scope=openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds&state=123123", teslaAuthURL, teslaClientID, teslaRedirectURI)
+		oauthUrl := fmt.Sprintf("%s?&client_id=%s&redirect_uri=%s&response_type=code&scope=openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds&state=db4af3f87", teslaAuthURL, teslaClientID, teslaRedirectURI)
+		print(oauthUrl)
 		c.Redirect(http.StatusTemporaryRedirect, oauthUrl)
 	})
 
 	r.GET("/auth/callback", func(c *gin.Context) {
-		print("11132gag")
 		code := c.Query("code")
 		if code == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code is required"})
 			return
 		}
-
+		print("gaga" + code + "gaga")
+		print("\n" + teslaClientID)
+		print("\n" + teslaClientSecret)
+		print("\n" + teslaAPIURL)
+		print("\n" + teslaRedirectURI)
 		client := resty.New()
 		resp, err := client.R().SetHeader("Content-Type", "application/x-www-form-urlencoded").SetFormData(map[string]string{
 			"grant_type":    "authorization_code",
@@ -54,21 +58,23 @@ func main() {
 			"client_secret": teslaClientSecret,
 			"audience":      teslaAPIURL,
 			"code":          code,
-			"state":         "123123",
-			"redirect_uri":  "http://localhost:3000",
-			"scope":         "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds",
+			"redirect_uri":  "http://localhost:8080/home",
 		}).Post(teslaTokenURL)
 
 		if err != nil {
-			print("1gagaga")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		print(string(resp.Body()))
+		print("\n" + fmt.Sprintf("%d", resp.StatusCode()) + "\n")
+		if resp.StatusCode() != http.StatusOK {
+			c.JSON(resp.StatusCode(), gin.H{"error": "Failed to exchange token"})
+			return
+		}
+
 		c.Data(http.StatusOK, "application/json", resp.Body())
 
 	})
 	// r.GET("/auth/callback", func(c *gin.Context) {
 
 	// })
-	r.Run(":3000")
+	r.Run("0.0.0.0:8080")
 }
