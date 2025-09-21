@@ -46,19 +46,19 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code is required"})
 			return
 		}
-		print("gaga" + code + "gaga")
+		print("\n" + code)
 		print("\n" + teslaClientID)
 		print("\n" + teslaClientSecret)
 		print("\n" + teslaAPIURL)
 		print("\n" + teslaRedirectURI)
 		client := resty.New()
-		resp, err := client.R().SetHeader("Content-Type", "application/x-www-form-urlencoded").SetFormData(map[string]string{
+		resp, err := client.R().SetContentLength(true).SetHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36").SetHeader("Host", "auth.tesla.cn").SetHeader("Content-Type", "application/json").SetBody(map[string]interface{}{
 			"grant_type":    "authorization_code",
 			"client_id":     teslaClientID,
 			"client_secret": teslaClientSecret,
 			"audience":      teslaAPIURL,
 			"code":          code,
-			"redirect_uri":  "http://localhost:8080/home",
+			"redirect_uri":  teslaRedirectURI,
 		}).Post(teslaTokenURL)
 
 		if err != nil {
@@ -76,5 +76,5 @@ func main() {
 	// r.GET("/auth/callback", func(c *gin.Context) {
 
 	// })
-	r.Run("0.0.0.0:8080")
+	r.Run(":8080")
 }
