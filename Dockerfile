@@ -8,6 +8,9 @@ RUN go mod download
 # 拷贝所有代码
 COPY . .
 
+# 打印目录结构帮助调试
+RUN ls -R .
+
 RUN GOOS=linux GOARCH=amd64 go build -o ./bin/server ./cmd/server
 
 # 最小化运行镜像
