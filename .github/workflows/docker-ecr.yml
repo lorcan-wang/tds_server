@@ -35,7 +35,7 @@ jobs:
         COMMIT_SHA: ${{ github.sha }}
       run: |
         echo "构建Docker 镜像 ..."
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA
 
         echo "推送Docker 镜像到 ECR"
