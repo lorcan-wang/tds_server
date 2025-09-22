@@ -8,7 +8,7 @@ RUN go mod download
 # 拷贝所有代码
 COPY . .
 
-RUN GOOS=linux GOARCH=amd64 go build -o server main.go
+RUN go build -o server main.go
 
 # 最小化运行镜像
 FROM --platform=linux/amd64 alpine:3.19
