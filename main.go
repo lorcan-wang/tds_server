@@ -46,11 +46,11 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code is required"})
 			return
 		}
-		print("\n" + code)
-		print("\n" + teslaClientID)
-		print("\n" + teslaClientSecret)
-		print("\n" + teslaAPIURL)
-		print("\n" + teslaRedirectURI)
+		log.info("\n" + c)
+		log.info("\n" + teslaClientID)
+		log.info("\n" + teslaClientSecret)
+		log.info("\n" + teslaAPIURL)
+		log.info("\n" + teslaRedirectURI)
 		client := resty.New()
 		resp, err := client.R().SetContentLength(true).SetHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36").SetHeader("Host", "auth.tesla.cn").SetHeader("Content-Type", "application/json").SetBody(map[string]interface{}{
 			"grant_type":    "authorization_code",
@@ -64,7 +64,7 @@ func main() {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		print("\n" + fmt.Sprintf("%d", resp.StatusCode()) + "\n")
+		log.info("\n" + fmt.Sprintf("%d", resp.StatusCode()) + "\n")
 		if resp.StatusCode() != http.StatusOK {
 			c.JSON(resp.StatusCode(), gin.H{"error": "Failed to exchange token"})
 			return
