@@ -4,6 +4,7 @@ import (
 	"log"
 	"tds_server/internal/config"
 	"tds_server/internal/data"
+	"tds_server/internal/repository"
 	"tds_server/internal/router"
 )
 
@@ -12,12 +13,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
-
+	// 初始化数据库
 	if err := data.InitDB(cfg); err != nil {
 		log.Fatalf("init db error: %v", err)
 	}
 
-	r := router.NewRouter(cfg)
+	// 构造repository
+	tokenRepo := repository.NewTokenRepo()
+
+	r := router.NewRouter(cfg, tokenRepo)
 
 	addr := cfg.Server.Address
 

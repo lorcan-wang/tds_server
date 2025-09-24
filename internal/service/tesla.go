@@ -25,7 +25,6 @@ func BuildAuthURL(cfg *config.Config) string {
 	params.Add("redirect_uri", cfg.TeslaRedirectURI)
 	params.Add("response_type", "code")
 	params.Add("scope", "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds")
-	params.Add("state", "db4af3f87")
 
 	return fmt.Sprintf("%s?%s", cfg.TeslaAuthURL, params.Encode())
 
