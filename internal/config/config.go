@@ -13,7 +13,14 @@ type Config struct {
 	TeslaAuthURL      string
 	TeslaTokenURL     string
 	TeslaAPIURL       string
-	Server            struct {
+	DB                struct {
+		Host     string
+		Port     string
+		User     string
+		Password string
+		DbName   string
+	}
+	Server struct {
 		Address string
 	}
 }
@@ -33,5 +40,13 @@ func LoadConfig() (*Config, error) {
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = ":8080"
 	}
+	cfg.DB.Host = os.Getenv("DB_HOST")
+	cfg.DB.Port = os.Getenv("DB_PORT")
+	if cfg.DB.Port == "" {
+		cfg.DB.Port = "5432"
+	}
+	cfg.DB.User = os.Getenv("DB_USER")
+	cfg.DB.Password = os.Getenv("DB_PASSWORD")
+	cfg.DB.DbName = os.Getenv("DB_NAME")
 	return cfg, nil
 }

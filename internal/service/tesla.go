@@ -14,8 +14,9 @@ type TeslaTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
-	Scope        string `json:"scope"`
+	IDToken      string `json:"id_token"`
 	TokenType    string `json:"token_type"`
+	State        string `json:"state"`
 }
 
 func BuildAuthURL(cfg *config.Config) string {
@@ -55,5 +56,6 @@ func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) 
 	if err := json.Unmarshal(resp.Body(), &tr); err != nil {
 		return nil, err
 	}
+	fmt.Printf("Response: %+s\n", resp.Body())
 	return &tr, nil
 }
