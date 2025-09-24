@@ -3,6 +3,10 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /app
 
 COPY go.mod go.sum ./
+
+RUN go env
+RUN ls -la .
+RUN cat go.mod
 RUN go mod download
 
 # 拷贝所有代码
