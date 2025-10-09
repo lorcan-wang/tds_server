@@ -34,3 +34,12 @@ func (repo *TokenRepo) Save(userID uuid.UUID, accessToken string, refreshToken s
 		},
 	).Create(&token).Error
 }
+
+// 查询用户token
+func (repo *TokenRepo) GetByUserID(userID uuid.UUID) (*model.UserToken, error) {
+	var token model.UserToken
+	if err := repo.db.Where("user_id = ?", userID).First(&token).Error; err != nil {
+		return nil, err
+	}
+	return &token, nil
+}

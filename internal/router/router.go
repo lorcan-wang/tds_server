@@ -18,6 +18,7 @@ func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo) *gin.Engine 
 	{
 		auth.GET("/login", handler.LoginRedirect(cfg))
 		auth.GET("/login/callback", handler.LoginCallback(cfg, tokenRepo))
+		auth.GET("/list", handler.GetList(cfg, tokenRepo))
 	}
 	return r
 }

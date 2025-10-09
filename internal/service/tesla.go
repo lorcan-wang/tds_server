@@ -27,7 +27,6 @@ func BuildAuthURL(cfg *config.Config) string {
 	params.Add("scope", "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds")
 
 	return fmt.Sprintf("%s?%s", cfg.TeslaAuthURL, params.Encode())
-
 }
 
 func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) {
