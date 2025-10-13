@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -26,8 +27,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	// 加载.env文件 如果存在
-	godotenv.Load()
+	loadEnv()
 
 	cfg := &Config{}
 	cfg.TeslaClientID = os.Getenv("TESLA_CLIENT_ID")
@@ -49,4 +49,30 @@ func LoadConfig() (*Config, error) {
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 	cfg.DB.DbName = os.Getenv("DB_NAME")
 	return cfg, nil
+}
+
+// loadEnv attempts to load environment variables from a .env file.
+// It looks in the current working directory first, then walks up to parent directories.
+func loadEnv() {
+	if err := godotenv.Load(); err == nil {
+		return
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
+	for dir := wd; ; dir = filepath.Dir(dir) {
+		envPath := filepath.Join(dir, ".env")
+		if _, statErr := os.Stat(envPath); statErr == nil {
+			_ = godotenv.Load(envPath)
+			return
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return
+		}
+	}
 }
