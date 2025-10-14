@@ -37,3 +37,10 @@
 - 默认 HTTP 监听地址为 `:8080`，Postgres 端口为 `5432`；请按环境覆盖并避免在源码中硬编码机密，可通过系统变量覆盖。
 - 新增环境变量时，请同步更新 `config.Config` 结构体并在 PR 中解释用途，必要时调整部署文档或脚本。
 - 发布前核对 `.env` 与部署环境配置，避免遗漏 Client Secret 等关键参数导致服务启动失败。
+- `TESLA_API_URL` 默认指向 `https://fleet-api.prd.cn.vn.cloud.tesla.cn`，同时被合作伙伴令牌与注册流程共用；如需切换环境请同时更新相关依赖。
+- `TESLA_PARTNER_DOMAIN` 默认值为 `dwdacbj25q.ap-southeast-1.awsapprunner.com`，生产环境必须改为实际绑定公开 `.well-known/appspecific/com.tesla.3p.public-key.pem` 的域名，否则注册会失败。
+
+## 合作伙伴令牌
+- `internal/service/partner_token.go` 在服务启动时通过 client_credentials 流程获取合作伙伴令牌，并缓存于内存；刷新会在过期前 30 秒触发。
+- 首次成功获取令牌后会自动调用 `/api/1/partner_accounts` 完成官方账号注册，请确保 `TESLA_API_URL` 与域名配置正确。
+- 如需在调试环境跳过注册，可临时注释服务调用，但务必在提交前恢复；线上环境依赖该注册确保命令下发权限。***
