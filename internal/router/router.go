@@ -33,6 +33,8 @@ func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *
 		auth.GET("/login", handler.LoginRedirect(cfg))
 		auth.GET("/login/callback", handler.LoginCallback(cfg, tokenRepo))
 		auth.GET("/list", handler.GetList(cfg, tokenRepo))
+		auth.GET("/vehicles/:vehicle_tag", handler.GetVehicle(cfg, tokenRepo))
+		auth.GET("/vehicles/:vehicle_tag/vehicle_data", handler.GetVehicleData(cfg, tokenRepo))
 	}
 	return r
 }

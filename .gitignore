@@ -3,3 +3,4 @@ bin
 .vscode/
 .gocache/
 .gomodcache/
+private-key.pem
