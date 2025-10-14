@@ -20,6 +20,7 @@ type Config struct {
 		User     string
 		Password string
 		DbName   string
+		TimeZone string
 	}
 	Server struct {
 		Address string
@@ -48,6 +49,10 @@ func LoadConfig() (*Config, error) {
 	cfg.DB.User = os.Getenv("DB_USER")
 	cfg.DB.Password = os.Getenv("DB_PASSWORD")
 	cfg.DB.DbName = os.Getenv("DB_NAME")
+	cfg.DB.TimeZone = os.Getenv("DB_TIMEZONE")
+	if cfg.DB.TimeZone == "" {
+		cfg.DB.TimeZone = "UTC"
+	}
 	return cfg, nil
 }
 

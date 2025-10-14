@@ -17,8 +17,8 @@ var DB *gorm.DB
 func InitDB(cfg *config.Config) error {
 	// 构建连接字符串
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=prefer TimeZone=Asia/Shanghai",
-		cfg.DB.Host, cfg.DB.User, cfg.DB.Password, cfg.DB.DbName, cfg.DB.Port,
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=prefer TimeZone=%s",
+		cfg.DB.Host, cfg.DB.User, cfg.DB.Password, cfg.DB.DbName, cfg.DB.Port, cfg.DB.TimeZone,
 	)
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
