@@ -8,13 +8,16 @@ import (
 )
 
 type Config struct {
-	TeslaClientID     string
-	TeslaClientSecret string
-	TeslaRedirectURI  string
-	TeslaAuthURL      string
-	TeslaTokenURL     string
-	TeslaAPIURL       string
-	DB                struct {
+	TeslaClientID        string
+	TeslaClientSecret    string
+	TeslaRedirectURI     string
+	TeslaAuthURL         string
+	TeslaTokenURL        string
+	TeslaAPIURL          string
+	TeslaPartnerTokenURL string
+	TeslaPartnerScope    string
+	TeslaPartnerDomain   string
+	DB                   struct {
 		Host     string
 		Port     string
 		User     string
@@ -37,6 +40,21 @@ func LoadConfig() (*Config, error) {
 	cfg.TeslaAuthURL = os.Getenv("TESLA_AUTH_URL")
 	cfg.TeslaTokenURL = os.Getenv("TESLA_TOKEN_URL")
 	cfg.TeslaAPIURL = os.Getenv("TESLA_API_URL")
+	if cfg.TeslaAPIURL == "" {
+		cfg.TeslaAPIURL = "https://fleet-api.prd.cn.vn.cloud.tesla.cn"
+	}
+	cfg.TeslaPartnerTokenURL = os.Getenv("TESLA_PARTNER_TOKEN_URL")
+	if cfg.TeslaPartnerTokenURL == "" {
+		cfg.TeslaPartnerTokenURL = "https://auth.tesla.cn/oauth2/v3/token"
+	}
+	cfg.TeslaPartnerScope = os.Getenv("TESLA_PARTNER_SCOPE")
+	if cfg.TeslaPartnerScope == "" {
+		cfg.TeslaPartnerScope = "openid user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds"
+	}
+	cfg.TeslaPartnerDomain = os.Getenv("TESLA_PARTNER_DOMAIN")
+	if cfg.TeslaPartnerDomain == "" {
+		cfg.TeslaPartnerDomain = "dwdacbj25q.ap-southeast-1.awsapprunner.com"
+	}
 
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = ":8080"

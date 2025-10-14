@@ -7,15 +7,23 @@ import (
 	"tds_server/internal/config"
 	"tds_server/internal/handler"
 	"tds_server/internal/repository"
+	"tds_server/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo) *gin.Engine {
+func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *service.PartnerTokenService) *gin.Engine {
 	r := gin.New()
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "ping"})
 	})
+
+	if partnerSvc != nil {
+		r.Use(func(c *gin.Context) {
+			c.Set("partnerTokenService", partnerSvc)
+			c.Next()
+		})
+	}
 
 	publicKeyFile := publicKeyFilePath()
 	r.StaticFile("/.well-known/appspecific/com.tesla.3p.public-key.pem", publicKeyFile)

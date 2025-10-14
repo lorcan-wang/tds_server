@@ -6,6 +6,7 @@ import (
 	"tds_server/internal/data"
 	"tds_server/internal/repository"
 	"tds_server/internal/router"
+	"tds_server/internal/service"
 )
 
 func main() {
@@ -21,7 +22,12 @@ func main() {
 	// 构造repository
 	tokenRepo := repository.NewTokenRepo()
 
-	r := router.NewRouter(cfg, tokenRepo)
+	partnerSvc, err := service.NewPartnerTokenService(cfg)
+	if err != nil {
+		log.Fatalf("init partner token service error: %v", err)
+	}
+
+	r := router.NewRouter(cfg, tokenRepo, partnerSvc)
 
 	addr := cfg.Server.Address
 
