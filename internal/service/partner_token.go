@@ -105,7 +105,6 @@ func (s *PartnerTokenService) refreshLocked(ctx context.Context) error {
 		"client_id":     s.cfg.TeslaClientID,
 		"client_secret": s.cfg.TeslaClientSecret,
 		"audience":      s.cfg.TeslaAPIURL,
-		"scope":         "openid user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds",
 	}
 	if scope := s.cfg.TeslaPartnerScope; scope != "" {
 		payload["scope"] = scope
