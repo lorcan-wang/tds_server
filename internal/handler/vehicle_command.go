@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +19,7 @@ import (
 )
 
 // VehicleCommand 统一处理 Tesla 车辆指令调用，所有指令均通过 POST 方式触发。
-func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
+func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo, commandSvc *service.VehicleCommandService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodPost {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "method not allowed"})
@@ -59,6 +60,31 @@ func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Han
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read request body"})
 			return
+		}
+
+		var commandResult *service.CommandResult
+		if commandSvc != nil {
+			commandName := strings.Split(commandPath, "/")[0]
+			commandResult, err = commandSvc.Execute(c.Request.Context(), vehicleTag, commandName, bodyBytes, token.AccessToken)
+			switch {
+			case err == nil && commandResult != nil:
+				c.Data(commandResult.Status, commandResult.ContentType, commandResult.Body)
+				return
+			case errors.Is(err, service.ErrVehicleCommandUseREST):
+				// fall back to REST handling below
+			case err != nil:
+				var cmdErr *service.CommandError
+				if errors.As(err, &cmdErr) {
+					if len(cmdErr.Body) > 0 {
+						c.Data(cmdErr.Status, "application/json", cmdErr.Body)
+					} else {
+						c.JSON(cmdErr.Status, gin.H{"error": cmdErr.Error()})
+					}
+					return
+				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 		}
 
 		requestURL := buildVehicleCommandURL(cfg.TeslaAPIURL, vehicleTag, commandPath)

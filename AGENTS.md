@@ -39,6 +39,8 @@
 - 发布前核对 `.env` 与部署环境配置，避免遗漏 Client Secret 等关键参数导致服务启动失败。
 - `TESLA_API_URL` 默认指向 `https://fleet-api.prd.cn.vn.cloud.tesla.cn`，同时被合作伙伴令牌与注册流程共用；如需切换环境请同时更新相关依赖。
 - `TESLA_PARTNER_DOMAIN` 默认值为 `dwdacbj25q.ap-southeast-1.awsapprunner.com`，生产环境必须改为实际绑定公开 `.well-known/appspecific/com.tesla.3p.public-key.pem` 的域名，否则注册会失败。
+- `TESLA_COMMAND_KEY_FILE` 配置车辆指令私钥路径，默认读取 `public/.well-known/appspecific/private-key.pem`；需确保车辆已完成对应公钥绑定，否则新协议指令会失败回退。
+- 车辆指令调用优先使用官方 `github.com/teslamotors/vehicle-command` SDK（参见 `internal/service/vehicle_command_service.go`），若 SDK 返回 `ErrVehicleCommandUseREST` 才会回退到 REST 调用；若需排查可开启日志并关注 SDK 输出。
 
 ## 合作伙伴令牌
 - `internal/service/partner_token.go` 在服务启动时通过 client_credentials 流程获取合作伙伴令牌，并缓存于内存；刷新会在过期前 30 秒触发。

@@ -109,7 +109,6 @@ func (s *PartnerTokenService) refreshLocked(ctx context.Context) error {
 	if scope := s.cfg.TeslaPartnerScope; scope != "" {
 		payload["scope"] = scope
 	}
-
 	var tokenResp partnerTokenResponse
 
 	resp, err := s.client.R().

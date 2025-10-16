@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"tds_server/internal/config"
 
@@ -19,17 +18,19 @@ type TeslaTokenResponse struct {
 	ExpiresIn    int    `json:"expires_in"`
 	IDToken      string `json:"id_token"`
 	TokenType    string `json:"token_type"`
+	Scope        string `json:"scope"`
 	State        string `json:"state"`
 }
 
 func BuildAuthURL(cfg *config.Config) string {
-	params := url.Values{}
-	params.Add("client_id", cfg.TeslaClientID)
-	params.Add("redirect_uri", cfg.TeslaRedirectURI)
-	params.Add("response_type", "code")
-	params.Add("scope", "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds")
-
-	return fmt.Sprintf("%s?%s", cfg.TeslaAuthURL, params.Encode())
+	return fmt.Sprintf(
+		"%s?client_id=%s&redirect_uri=%s&response_type=%s&scope=%s",
+		cfg.TeslaAuthURL,
+		cfg.TeslaClientID,
+		cfg.TeslaRedirectURI,
+		"code",
+		cfg.TeslaPartnerScope,
+	)
 }
 
 func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) {
@@ -44,6 +45,7 @@ func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) 
 		"audience":      cfg.TeslaAPIURL,
 		"code":          code,
 		"redirect_uri":  cfg.TeslaRedirectURI,
+		"scope":         cfg.TeslaPartnerScope,
 	}).Post(cfg.TeslaTokenURL)
 
 	if err != nil {
@@ -57,6 +59,7 @@ func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) 
 	if err := json.Unmarshal(resp.Body(), &tr); err != nil {
 		return nil, err
 	}
+	fmt.Printf("Tesla token scopes: %s\n", tr.Scope)
 	fmt.Printf("Response: %+s\n", resp.Body())
 	return &tr, nil
 }

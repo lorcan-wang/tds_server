@@ -27,7 +27,12 @@ func main() {
 		log.Fatalf("init partner token service error: %v", err)
 	}
 
-	r := router.NewRouter(cfg, tokenRepo, partnerSvc)
+	commandSvc, err := service.NewVehicleCommandService(cfg)
+	if err != nil {
+		log.Fatalf("init vehicle command service error: %v", err)
+	}
+
+	r := router.NewRouter(cfg, tokenRepo, partnerSvc, commandSvc)
 
 	addr := cfg.Server.Address
 

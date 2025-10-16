@@ -17,6 +17,7 @@ type Config struct {
 	TeslaPartnerTokenURL string
 	TeslaPartnerScope    string
 	TeslaPartnerDomain   string
+	TeslaCommandKeyPath  string
 	DB                   struct {
 		Host     string
 		Port     string
@@ -43,13 +44,17 @@ func LoadConfig() (*Config, error) {
 	if cfg.TeslaAPIURL == "" {
 		cfg.TeslaAPIURL = "https://fleet-api.prd.cn.vn.cloud.tesla.cn"
 	}
+	cfg.TeslaCommandKeyPath = os.Getenv("TESLA_COMMAND_KEY_FILE")
+	if cfg.TeslaCommandKeyPath == "" {
+		cfg.TeslaCommandKeyPath = filepath.Join("public", ".well-known", "appspecific", "private-key.pem")
+	}
 	cfg.TeslaPartnerTokenURL = os.Getenv("TESLA_PARTNER_TOKEN_URL")
 	if cfg.TeslaPartnerTokenURL == "" {
 		cfg.TeslaPartnerTokenURL = "https://auth.tesla.cn/oauth2/v3/token"
 	}
 	cfg.TeslaPartnerScope = os.Getenv("TESLA_PARTNER_SCOPE")
 	if cfg.TeslaPartnerScope == "" {
-		cfg.TeslaPartnerScope = "openid user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds"
+		cfg.TeslaPartnerScope = "openid user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds vehicle_location offline_access"
 	}
 	cfg.TeslaPartnerDomain = os.Getenv("TESLA_PARTNER_DOMAIN")
 	if cfg.TeslaPartnerDomain == "" {

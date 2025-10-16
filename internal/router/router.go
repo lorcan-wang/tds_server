@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *service.PartnerTokenService) *gin.Engine {
+func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *service.PartnerTokenService, commandSvc *service.VehicleCommandService) *gin.Engine {
 	r := gin.New()
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "ping"})
@@ -35,7 +35,7 @@ func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *
 		auth.GET("/list", handler.GetList(cfg, tokenRepo))
 		auth.GET("/vehicles/:vehicle_tag", handler.GetVehicle(cfg, tokenRepo))
 		auth.GET("/vehicles/:vehicle_tag/vehicle_data", handler.GetVehicleData(cfg, tokenRepo))
-		auth.POST("/vehicles/:vehicle_tag/command/*command_path", handler.VehicleCommand(cfg, tokenRepo))
+		auth.POST("/vehicles/:vehicle_tag/command/*command_path", handler.VehicleCommand(cfg, tokenRepo, commandSvc))
 	}
 	return r
 }
