@@ -25,7 +25,7 @@ type partnerTokenResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
-// PartnerTokenService retrieves and caches partner access tokens in memory.
+// PartnerTokenService retrieves and caches partner access tokens in memory. PartnerTokenService 在内存中获取并缓存合作伙伴访问令牌。
 type PartnerTokenService struct {
 	cfg        *config.Config
 	client     *resty.Client
@@ -35,7 +35,7 @@ type PartnerTokenService struct {
 	registered bool
 }
 
-// NewPartnerTokenService creates a PartnerTokenService and loads the initial token eagerly.
+// NewPartnerTokenService creates a PartnerTokenService and loads the initial token eagerly. NewPartnerTokenService 会创建服务并主动加载初始令牌。
 func NewPartnerTokenService(cfg *config.Config) (*PartnerTokenService, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is required")
@@ -61,7 +61,7 @@ func NewPartnerTokenService(cfg *config.Config) (*PartnerTokenService, error) {
 	return svc, nil
 }
 
-// GetToken returns a cached partner token, refreshing it if it is close to expiry.
+// GetToken returns a cached partner token, refreshing it if it is close to expiry. GetToken 会返回已缓存的合作伙伴令牌，并在即将过期时刷新。
 func (s *PartnerTokenService) GetToken(ctx context.Context) (string, error) {
 	if ctx == nil {
 		ctx = context.Background()

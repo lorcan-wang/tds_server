@@ -15,7 +15,7 @@ import (
 var DB *gorm.DB
 
 func InitDB(cfg *config.Config) error {
-	// 构建连接字符串
+	// 构建连接字符串。Build the connection string.
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=prefer TimeZone=%s",
 		cfg.DB.Host, cfg.DB.User, cfg.DB.Password, cfg.DB.DbName, cfg.DB.Port, cfg.DB.TimeZone,
@@ -28,18 +28,18 @@ func InitDB(cfg *config.Config) error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// 获取底层 *sql.DB 来设置连接池
+	// 获取底层 *sql.DB 来设置连接池。Retrieve the underlying *sql.DB to configure the connection pool.
 	sqlDB, err := DB.DB()
 	if err != nil {
 		return fmt.Errorf("failed to get sql.DB from gorm DB: %w", err)
 	}
 
-	// 设置连接池参数
+	// 设置连接池参数。Configure connection pool parameters.
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// 自动迁移（只创建缺失表/列，不删除）
+	// 自动迁移（只创建缺失表/列，不删除）。Auto-migrate creates missing tables or columns without dropping existing ones.
 	err = DB.AutoMigrate(&model.UserToken{})
 	if err != nil {
 		return fmt.Errorf("failed to auto migrate: %w", err)

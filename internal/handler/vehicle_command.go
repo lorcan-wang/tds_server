@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// VehicleCommand 统一处理 Tesla 车辆指令调用，所有指令均通过 POST 方式触发。
+// VehicleCommand handles Tesla vehicle command requests via POST. VehicleCommand 统一处理 Tesla 车辆指令调用，所有指令均通过 POST 方式触发。
 func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo, commandSvc *service.VehicleCommandService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodPost {
@@ -71,7 +71,7 @@ func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo, command
 				c.Data(commandResult.Status, commandResult.ContentType, commandResult.Body)
 				return
 			case errors.Is(err, service.ErrVehicleCommandUseREST):
-				// fall back to REST handling below
+				// fall back to REST handling below. 在下方回退到 REST 处理。
 			case err != nil:
 				var cmdErr *service.CommandError
 				if errors.As(err, &cmdErr) {

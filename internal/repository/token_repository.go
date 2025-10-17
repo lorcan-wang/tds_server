@@ -18,7 +18,7 @@ func NewTokenRepo() *TokenRepo {
 	return &TokenRepo{db: data.DB}
 }
 
-// 保存（创建或更新）用户token
+// Save creates or updates a user token. Save 方法会创建或更新用户 token。
 func (repo *TokenRepo) Save(userID uuid.UUID, accessToken string, refreshToken string, expiresIn time.Duration) error {
 	expiresAt := time.Now().Add(expiresIn * time.Second)
 	token := model.UserToken{
@@ -35,7 +35,7 @@ func (repo *TokenRepo) Save(userID uuid.UUID, accessToken string, refreshToken s
 	).Create(&token).Error
 }
 
-// 查询用户token
+// GetByUserID retrieves a user token by ID. GetByUserID 根据用户 ID 查询 token。
 func (repo *TokenRepo) GetByUserID(userID uuid.UUID) (*model.UserToken, error) {
 	var token model.UserToken
 	if err := repo.db.Where("user_id = ?", userID).First(&token).Error; err != nil {

@@ -31,7 +31,7 @@ func LoginCallback(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Hand
 			return
 		}
 		// userId := c.Query("state")
-		// 保存token
+		// 保存 token。Save the token.
 		saveErr := tokenRepo.Save(uuid.New(), teslaTokenRepo.AccessToken, teslaTokenRepo.RefreshToken, time.Duration(teslaTokenRepo.ExpiresIn))
 		if saveErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": saveErr.Error()})

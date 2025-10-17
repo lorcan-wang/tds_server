@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	// ErrVehicleCommandUseREST indicates the request should fall back to the REST API.
+	// ErrVehicleCommandUseREST indicates the request should fall back to the REST API. ErrVehicleCommandUseREST 表示需要回退到 REST 接口。
 	ErrVehicleCommandUseREST = errors.New("vehicle command requires REST fallback")
 )
 
@@ -31,7 +31,7 @@ const (
 	defaultResponseType   = "application/json"
 )
 
-// VehicleCommandService encapsulates command execution logic using Tesla's vehicle-command SDK.
+// VehicleCommandService encapsulates command execution with Tesla's vehicle-command SDK. VehicleCommandService 使用 Tesla vehicle-command SDK 封装指令执行逻辑。
 type VehicleCommandService struct {
 	cfg        *config.Config
 	commandKey protocol.ECDHPrivateKey
@@ -40,14 +40,14 @@ type VehicleCommandService struct {
 	vinLocks   sync.Map
 }
 
-// CommandResult captures a successful command execution.
+// CommandResult captures a successful command execution. CommandResult 表示一次成功的车辆指令执行结果。
 type CommandResult struct {
 	Status      int
 	Body        []byte
 	ContentType string
 }
 
-// CommandError wraps failures with HTTP semantics.
+// CommandError wraps failures with HTTP semantics. CommandError 使用 HTTP 语义封装失败信息。
 type CommandError struct {
 	Status int
 	Body   []byte
@@ -61,7 +61,7 @@ func (e *CommandError) Error() string {
 	return http.StatusText(e.Status)
 }
 
-// NewVehicleCommandService constructs a VehicleCommandService.
+// NewVehicleCommandService constructs a VehicleCommandService. NewVehicleCommandService 构建一个新的 VehicleCommandService 实例。
 func NewVehicleCommandService(cfg *config.Config) (*VehicleCommandService, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is required")
@@ -83,7 +83,7 @@ func NewVehicleCommandService(cfg *config.Config) (*VehicleCommandService, error
 	}, nil
 }
 
-// Execute sends a vehicle command via the new protocol.
+// Execute sends a vehicle command via the new protocol. Execute 会通过新协议发送车辆指令。
 func (s *VehicleCommandService) Execute(ctx context.Context, vin, command string, payload []byte, oauthToken string) (*CommandResult, error) {
 	if oauthToken == "" {
 		return nil, &CommandError{Status: http.StatusUnauthorized, Err: errors.New("missing oauth token")}

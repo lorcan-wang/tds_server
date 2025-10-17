@@ -79,8 +79,8 @@ func LoadConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// loadEnv attempts to load environment variables from a .env file.
-// It looks in the current working directory first, then walks up to parent directories.
+// loadEnv loads environment variables from a .env file. loadEnv 会从 .env 文件加载环境变量。
+// It checks the current working directory first and then walks up the parent directories. 它会先检查当前工作目录，然后逐级向上查找父级目录。
 func loadEnv() {
 	if err := godotenv.Load(); err == nil {
 		return

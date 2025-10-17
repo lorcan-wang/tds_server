@@ -16,7 +16,7 @@ import (
 
 const teslaUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 
-// GetList 返回指定用户绑定的车辆列表信息。
+// GetList returns the vehicles bound to the specified user. GetList 返回指定用户绑定的车辆列表信息。
 func GetList(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam, ok := c.GetQuery("user_id")
@@ -90,7 +90,7 @@ func GetList(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFun
 	}
 }
 
-// GetVehicle 根据车辆标识获取车辆详细信息。
+// GetVehicle retrieves vehicle details for the given tag. GetVehicle 根据车辆标识获取车辆详细信息。
 func GetVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam, ok := c.GetQuery("user_id")
@@ -171,7 +171,7 @@ func GetVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Handler
 	}
 }
 
-// GetVehicleData 调用 Tesla Fleet API 的 vehicle_data 接口，支持透传查询参数（除 user_id 外）。
+// GetVehicleData retrieves vehicle_data from the Tesla Fleet API while passing through query parameters (excluding user_id). GetVehicleData 调用 Tesla Fleet API 的 vehicle_data 接口，并透传查询参数（除 user_id 外）。
 func GetVehicleData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam, ok := c.GetQuery("user_id")
