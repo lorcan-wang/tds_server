@@ -15,3 +15,12 @@ type UserToken struct {
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
 }
+
+// IsExpired reports whether the token expires within the given lead time.
+func (t *UserToken) IsExpired(lead time.Duration) bool {
+	if t == nil {
+		return true
+	}
+	deadline := time.Now().Add(lead)
+	return !deadline.Before(t.ExpiresAt)
+}

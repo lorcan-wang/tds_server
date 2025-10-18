@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"tds_server/internal/config"
 	"tds_server/internal/repository"
@@ -53,6 +52,12 @@ func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo, command
 		token, err := tokenRepo.GetByUserID(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		token, err = ensureValidToken(cfg, tokenRepo, userID, token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
 			return
 		}
 
@@ -124,23 +129,13 @@ func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo, command
 		}
 
 		if resp.StatusCode() == http.StatusUnauthorized {
-			refreshed, refreshErr := service.RefreshToken(cfg, token.RefreshToken)
-			if refreshErr != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + refreshErr.Error()})
+			token, err = refreshUserToken(cfg, tokenRepo, userID, token)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
 				return
 			}
 
-			newRefresh := refreshed.RefreshToken
-			if newRefresh == "" {
-				newRefresh = token.RefreshToken
-			}
-
-			if saveErr := tokenRepo.Save(userID, refreshed.AccessToken, newRefresh, time.Duration(refreshed.ExpiresIn)); saveErr != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": saveErr.Error()})
-				return
-			}
-
-			resp, err = makeRequest(refreshed.AccessToken)
+			resp, err = makeRequest(token.AccessToken)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return

@@ -41,6 +41,7 @@
 - `TESLA_PARTNER_DOMAIN` 默认值为 `dwdacbj25q.ap-southeast-1.awsapprunner.com`，生产环境必须改为实际绑定公开 `.well-known/appspecific/com.tesla.3p.public-key.pem` 的域名，否则注册会失败。
 - `TESLA_COMMAND_KEY_FILE` 配置车辆指令私钥路径，默认读取 `public/.well-known/appspecific/private-key.pem`；需确保车辆已完成对应公钥绑定，否则新协议指令会失败回退。
 - 车辆指令调用优先使用官方 `github.com/teslamotors/vehicle-command` SDK（参见 `internal/service/vehicle_command_service.go`），若 SDK 返回 `ErrVehicleCommandUseREST` 才会回退到 REST 调用；若需排查可开启日志并关注 SDK 输出。
+- 所有车辆接口（`/list`、`/vehicles/:vehicle_tag/...`、`/command/*`）在进入 Tesla API 前会主动检测 token 是否即将过期（默认 5 分钟），必要时自动刷新并落库；出现 401 仍保留兜底重试，确保调用方无感知。
 
 ## 合作伙伴令牌
 - `internal/service/partner_token.go` 在服务启动时通过 client_credentials 流程获取合作伙伴令牌，并缓存于内存；刷新会在过期前 30 秒触发。

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"tds_server/internal/config"
+	"tds_server/internal/model"
 	"tds_server/internal/repository"
 	"tds_server/internal/service"
 
@@ -36,6 +37,11 @@ func GetList(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFun
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		if token, err = ensureValidToken(cfg, tokenRepo, userID, token); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
+			return
+		}
+
 		client := resty.New()
 		client.SetContentLength(true)
 		client.SetHeader("User-Agent", teslaUserAgent)
@@ -49,23 +55,15 @@ func GetList(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFun
 		}
 
 		if resp.StatusCode() == http.StatusUnauthorized {
-			refreshed, refreshErr := service.RefreshToken(cfg, token.RefreshToken)
-			if refreshErr != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + refreshErr.Error()})
+			// Final safety net: if Tesla still reports 401, refresh again to avoid stale tokens.
+			// 最终兜底：若 Tesla 仍返回 401，再次刷新以防止使用过期凭证。
+			token, err = refreshUserToken(cfg, tokenRepo, userID, token)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
 				return
 			}
 
-			newRefresh := refreshed.RefreshToken
-			if newRefresh == "" {
-				newRefresh = token.RefreshToken
-			}
-
-			if saveErr := tokenRepo.Save(userID, refreshed.AccessToken, newRefresh, time.Duration(refreshed.ExpiresIn)); saveErr != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": saveErr.Error()})
-				return
-			}
-
-			client.SetHeader("Authorization", "Bearer "+refreshed.AccessToken)
+			client.SetHeader("Authorization", "Bearer "+token.AccessToken)
 			resp, err = client.R().Get(listURL)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -116,6 +114,10 @@ func GetVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Handler
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		if token, err = ensureValidToken(cfg, tokenRepo, userID, token); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
+			return
+		}
 
 		client := resty.New()
 		client.SetContentLength(true)
@@ -130,23 +132,13 @@ func GetVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Handler
 		}
 
 		if resp.StatusCode() == http.StatusUnauthorized {
-			refreshed, refreshErr := service.RefreshToken(cfg, token.RefreshToken)
-			if refreshErr != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + refreshErr.Error()})
+			token, err = refreshUserToken(cfg, tokenRepo, userID, token)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
 				return
 			}
 
-			newRefresh := refreshed.RefreshToken
-			if newRefresh == "" {
-				newRefresh = token.RefreshToken
-			}
-
-			if saveErr := tokenRepo.Save(userID, refreshed.AccessToken, newRefresh, time.Duration(refreshed.ExpiresIn)); saveErr != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": saveErr.Error()})
-				return
-			}
-
-			client.SetHeader("Authorization", "Bearer "+refreshed.AccessToken)
+			client.SetHeader("Authorization", "Bearer "+token.AccessToken)
 			resp, err = client.R().Get(detailURL)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -197,6 +189,10 @@ func GetVehicleData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Han
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		if token, err = ensureValidToken(cfg, tokenRepo, userID, token); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
+			return
+		}
 
 		client := resty.New()
 		client.SetContentLength(true)
@@ -223,23 +219,13 @@ func GetVehicleData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Han
 		}
 
 		if resp.StatusCode() == http.StatusUnauthorized {
-			refreshed, refreshErr := service.RefreshToken(cfg, token.RefreshToken)
-			if refreshErr != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + refreshErr.Error()})
+			token, err = refreshUserToken(cfg, tokenRepo, userID, token)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
 				return
 			}
 
-			newRefresh := refreshed.RefreshToken
-			if newRefresh == "" {
-				newRefresh = token.RefreshToken
-			}
-
-			if saveErr := tokenRepo.Save(userID, refreshed.AccessToken, newRefresh, time.Duration(refreshed.ExpiresIn)); saveErr != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": saveErr.Error()})
-				return
-			}
-
-			client.SetHeader("Authorization", "Bearer "+refreshed.AccessToken)
+			client.SetHeader("Authorization", "Bearer "+token.AccessToken)
 			resp, err = makeRequest()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -262,4 +248,37 @@ func GetVehicleData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Han
 		}
 		c.Data(http.StatusOK, contentType, resp.Body())
 	}
+}
+
+// ensureValidToken proactively renews tokens that are about to expire (default 5 minutes window).
+// ensureValidToken 会在 token 剩余不足 5 分钟时主动刷新，避免后续请求命中 401。
+func ensureValidToken(cfg *config.Config, tokenRepo *repository.TokenRepo, userID uuid.UUID, token *model.UserToken) (*model.UserToken, error) {
+	if !token.IsExpired(5 * time.Minute) {
+		return token, nil
+	}
+	return refreshUserToken(cfg, tokenRepo, userID, token)
+}
+
+func refreshUserToken(cfg *config.Config, tokenRepo *repository.TokenRepo, userID uuid.UUID, token *model.UserToken) (*model.UserToken, error) {
+	// Caller-side 401 guard relies on this function to be idempotent.
+	// 调用方的 401 回退依赖此函数幂等刷新，因此这里无需额外判断。
+	refreshed, err := service.RefreshToken(cfg, token.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	newRefresh := refreshed.RefreshToken
+	if newRefresh == "" {
+		newRefresh = token.RefreshToken
+	}
+
+	expiresIn := time.Duration(refreshed.ExpiresIn)
+	if err := tokenRepo.Save(userID, refreshed.AccessToken, newRefresh, expiresIn); err != nil {
+		return nil, err
+	}
+
+	token.AccessToken = refreshed.AccessToken
+	token.RefreshToken = newRefresh
+	token.ExpiresAt = time.Now().Add(expiresIn * time.Second)
+	return token, nil
 }
