@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"tds_server/internal/config"
+	"tds_server/internal/middleware"
 	"tds_server/internal/repository"
 	"tds_server/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
-	"github.com/google/uuid"
 )
 
 // VehicleCommand handles Tesla vehicle command requests via POST. VehicleCommand 统一处理 Tesla 车辆指令调用，所有指令均通过 POST 方式触发。
@@ -31,21 +31,15 @@ func VehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo, command
 			return
 		}
 
-		userIDParam, ok := c.GetQuery("user_id")
-		if !ok {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
-			return
-		}
-
 		vehicleTag := c.Param("vehicle_tag")
 		if vehicleTag == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "vehicle_tag is required"})
 			return
 		}
 
-		userID, err := uuid.Parse(userIDParam)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is invalid"})
+		userID, ok := middleware.UserIDFromContext(c)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "user is not authenticated"})
 			return
 		}
 

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -28,6 +29,11 @@ type Config struct {
 	}
 	Server struct {
 		Address string
+	}
+	JWT struct {
+		Secret     string
+		Issuer     string
+		Expiration time.Duration
 	}
 }
 
@@ -63,6 +69,19 @@ func LoadConfig() (*Config, error) {
 
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = ":8080"
+	}
+	cfg.JWT.Secret = os.Getenv("JWT_SECRET")
+	cfg.JWT.Issuer = os.Getenv("JWT_ISSUER")
+	if cfg.JWT.Issuer == "" {
+		cfg.JWT.Issuer = "tds_server"
+	}
+	if ttl := os.Getenv("JWT_EXPIRATION"); ttl != "" {
+		if dur, err := time.ParseDuration(ttl); err == nil {
+			cfg.JWT.Expiration = dur
+		}
+	}
+	if cfg.JWT.Expiration == 0 {
+		cfg.JWT.Expiration = 24 * time.Hour
 	}
 	cfg.DB.Host = os.Getenv("DB_HOST")
 	cfg.DB.Port = os.Getenv("DB_PORT")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"tds_server/internal/config"
 
@@ -22,15 +23,17 @@ type TeslaTokenResponse struct {
 	State        string `json:"state"`
 }
 
-func BuildAuthURL(cfg *config.Config) string {
-	return fmt.Sprintf(
-		"%s?client_id=%s&redirect_uri=%s&response_type=%s&scope=%s",
-		cfg.TeslaAuthURL,
-		cfg.TeslaClientID,
-		cfg.TeslaRedirectURI,
-		"code",
-		cfg.TeslaPartnerScope,
-	)
+func BuildAuthURL(cfg *config.Config, state string) string {
+	values := url.Values{
+		"client_id":     []string{cfg.TeslaClientID},
+		"redirect_uri":  []string{cfg.TeslaRedirectURI},
+		"response_type": []string{"code"},
+		"scope":         []string{cfg.TeslaPartnerScope},
+	}
+	if state != "" {
+		values.Set("state", state)
+	}
+	return fmt.Sprintf("%s?%s", cfg.TeslaAuthURL, values.Encode())
 }
 
 func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) {

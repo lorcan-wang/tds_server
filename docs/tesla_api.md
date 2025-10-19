@@ -5,6 +5,11 @@
 - 本项目通过可配置的 `TESLA_AUTH_URL`、`TESLA_TOKEN_URL`、`TESLA_API_URL` 注入目标环境，请在 `.env` 中维护并避免硬编码。
 - 所有请求均需附带 OAuth 2.0 Bearer Token，未授权会返回 `401`。
 
+### JWT 环境变量
+- `JWT_SECRET`：用于 HS256 签名的对称密钥，需确保在各环境中保持机密且足够复杂；建议长度至少 32 字节，可使用随机生成工具。
+- `JWT_ISSUER`：JWT 的 `iss` 字段，默认值为 `tds_server`，如需跨服务校验可设为域名或服务 ID。
+- `JWT_EXPIRATION`：JWT 有效期，采用 Go 时长语法（如 `24h`、`72h`）。默认 24 小时，生产环境建议依据业务安全策略调整。
+
 ## 鉴权流程
 - **授权地址**：`BuildAuthURL` 使用 `response_type=code` 构建登录链接，关键参数：`client_id`、`redirect_uri`、`scope`。默认 scope 覆盖 `openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds`，如需新增权限可扩展。
 - **换取令牌**：调用 `POST TESLA_TOKEN_URL`，请求体示例：

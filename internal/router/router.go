@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"tds_server/internal/config"
 	"tds_server/internal/handler"
+	"tds_server/internal/middleware"
 	"tds_server/internal/repository"
 	"tds_server/internal/service"
 
@@ -28,14 +29,17 @@ func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *
 	publicKeyFile := publicKeyFilePath()
 	r.StaticFile("/.well-known/appspecific/com.tesla.3p.public-key.pem", publicKeyFile)
 
-	auth := r.Group("/api")
+	api := r.Group("/api")
 	{
-		auth.GET("/login", handler.LoginRedirect(cfg))
-		auth.GET("/login/callback", handler.LoginCallback(cfg, tokenRepo))
-		auth.GET("/list", handler.GetList(cfg, tokenRepo))
-		auth.GET("/vehicles/:vehicle_tag", handler.GetVehicle(cfg, tokenRepo))
-		auth.GET("/vehicles/:vehicle_tag/vehicle_data", handler.GetVehicleData(cfg, tokenRepo))
-		auth.POST("/vehicles/:vehicle_tag/command/*command_path", handler.VehicleCommand(cfg, tokenRepo, commandSvc))
+		api.GET("/login", handler.LoginRedirect(cfg))
+		api.GET("/login/callback", handler.LoginCallback(cfg, tokenRepo))
+
+		protected := api.Group("/")
+		protected.Use(middleware.JWTAuth(cfg))
+		protected.GET("/list", handler.GetList(cfg, tokenRepo))
+		protected.GET("/vehicles/:vehicle_tag", handler.GetVehicle(cfg, tokenRepo))
+		protected.GET("/vehicles/:vehicle_tag/vehicle_data", handler.GetVehicleData(cfg, tokenRepo))
+		protected.POST("/vehicles/:vehicle_tag/command/*command_path", handler.VehicleCommand(cfg, tokenRepo, commandSvc))
 	}
 	return r
 }
