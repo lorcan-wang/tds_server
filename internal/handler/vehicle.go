@@ -23,6 +23,7 @@ import (
 const teslaUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 
 // Vehicle inventory endpoints --------------------------------------------------------------------
+// 车辆清单相关端点：负责车辆基础信息与状态拉取。
 
 func GetList(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles")...)
@@ -49,6 +50,7 @@ func WakeUpVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Hand
 }
 
 // Driver and sharing endpoints -------------------------------------------------------------------
+// 驾驶员与车辆共享端点：管理共享邀请与驾驶授权。
 
 func GetVehicleDrivers(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "drivers")...)
@@ -75,6 +77,7 @@ func RedeemShareInvite(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.
 }
 
 // Vehicle capability endpoints -------------------------------------------------------------------
+// 能力查询端点：涵盖附近充电站、固件信息等扩展能力。
 
 func GetVehicleMobileEnabled(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "mobile_enabled")...)
@@ -97,6 +100,7 @@ func GetServiceData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Han
 }
 
 // Fleet telemetry endpoints ----------------------------------------------------------------------
+// 车队遥测端点：配置/查询第三方遥测服务。
 
 func CreateFleetTelemetryConfig(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", "fleet_telemetry_config")...)
@@ -119,6 +123,7 @@ func GetFleetTelemetryErrors(cfg *config.Config, tokenRepo *repository.TokenRepo
 }
 
 // Subscription endpoints -------------------------------------------------------------------------
+// 推送订阅端点：维护车辆/设备推送通知订阅列表。
 
 func GetVehicleSubscriptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicle_subscriptions")...)
@@ -145,6 +150,7 @@ func GetEligibleUpgrades(cfg *config.Config, tokenRepo *repository.TokenRepo) gi
 }
 
 // Misc endpoints ---------------------------------------------------------------------------------
+// 其他车辆相关端点：包含状态汇总、签名指令等。
 
 func PostFleetStatus(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
 	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", "fleet_status")...)
@@ -163,6 +169,7 @@ func SendSignedVehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRep
 }
 
 // Shared proxy helpers ---------------------------------------------------------------------------
+// 通用代理工具：统一处理路径解析、令牌刷新与请求透传。
 
 func vehicleEndpointHandler(cfg *config.Config, tokenRepo *repository.TokenRepo, method string, segments ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
