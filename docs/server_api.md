@@ -10,6 +10,7 @@
 ## 鉴权流程 / Authentication Flow
 1. **发起登录**：`GET /api/login?state=<optional-uuid>`，服务返回 302 并跳转至 Tesla OAuth 登录页，`state` 将在回调时原样返回，用于识别用户。
 2. **处理回调**：Tesla 完成授权后访问 `GET /api/login/callback?code=<auth_code>&state=<uuid>`，服务会：
+   - 如果通过 WebView 打开，回调页面会通过 `window.ReactNativeWebView.postMessage` 推送 JSON，可参考 `docs/rn_login_flow.md` 获取 React Native 集成示例。
    - 交换 Tesla OAuth Token，并落库保存 `access_token`/`refresh_token`；
    - 颁发内部 JWT，响应示例：
      ```json
