@@ -1,0 +1,17 @@
+{
+  "response": {
+    "configured_vehicles": [
+      {
+        "vin": "5YJSA7E26HF000001",
+        "synced": true,
+        "limit_reached": false
+      }
+    ],
+    "skipped_vehicles": [
+      {
+        "vin": "LRW3E7FA0MC000002",
+        "reason": "missing_key"
+      }
+    ]
+  }
+}

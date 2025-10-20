@@ -135,6 +135,19 @@ curl -X POST -H "Authorization: Bearer <jwt>" \
      "http://localhost:8080/api/vehicles/12345/command/climate_on"
 ```
 
+
+## 契约与模拟数据 / Contracts & Mocks
+
+- TypeScript 类型定义位于 `docs/server_api_types.ts`，覆盖登录回调、通用错误、车辆列表、共享邀请、遥测配置等结构，供前端直接引用。
+- 常用响应示例存放在 `docs/mock/` 目录：
+  - `login_callback.json`：登录回调成功示例。
+  - `error_response.json`：统一错误格式。
+  - `vehicles_list.json`：`/api/list` 车辆列表响应。
+  - `vehicle_data.json`：`/api/vehicles/:vehicle_tag/vehicle_data` 精简示例。
+  - `share_invites.json`：共享邀请列表。
+  - `fleet_telemetry_config.json`：遥测配置返回。
+
+如需新增端点，请同步更新类型定义与示例，确保前端契约一致。
 ## 注意事项 / Notes
 - 服务会在访问 Tesla API 前检查 Access Token 是否在 5 分钟内过期，并自动刷新；若仍遇到 `401` 会重试一次。
 - 所有路径参数如 `:vehicle_tag`、`:invitation_id` 需替换为 Tesla 返回的真实值，`vin` 查询参数遵循官方文档要求。

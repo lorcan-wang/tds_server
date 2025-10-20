@@ -1,0 +1,15 @@
+{
+  "user_id": "9d546e6b-3f5b-4a07-b1a4-4c1bdbd6c9c8",
+  "jwt": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0ZHNfc2VydmVyIiwic3ViIjoiOWQ1NDZlNmItM2Y1Yi00YTA3LWIxYTQtNGMxYmRiZDZjOWM4IiwiaWF0IjoxNzI2MjA0MDAwLCJleHAiOjE3MjYyMDc2MDB9.V8wkP6x8U2lsBlw_2CSdChm15-tJ3E3ioL3VKEJ7A5E",
+    "expires_in": 3600,
+    "issuer": "tds_server"
+  },
+  "tesla_token": {
+    "access_token": "qwerty-1234567890-access",
+    "refresh_token": "qwerty-1234567890-refresh",
+    "expires_in": 28800,
+    "scope": "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds",
+    "token_type": "Bearer"
+  }
+}
