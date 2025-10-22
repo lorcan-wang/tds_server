@@ -26,18 +26,6 @@
 - **刷新令牌**：官方文档提供 `grant_type=refresh_token`，需提交刷新令牌与 `client_id`、`client_secret`；项目已在 `service.RefreshToken` 中封装调用。
 - 建议持久化 `access_token`、`refresh_token`、`expires_in`，并在 5 分钟前主动刷新或捕获 `401` 后自动刷新。
 
-## 核心接口速览
-| 功能 | 方法 | 路径 | 说明 |
-| ---- | ---- | ---- | ---- |
-| 查询车辆列表 | GET | `/api/1/vehicles` | 返回账号可见车辆及 `id`, `vin`, `state` 等；初次加载可能处于 `asleep`。 |
-| 获取车辆详情 | GET | `/api/1/vehicles/{vehicle_id}` | 单车状态，包含车主信息和连接状态。 |
-| 唤醒车辆 | POST | `/api/1/vehicles/{vehicle_id}/wake_up` | 若返回 `asleep` 可重试，限制 1~2 秒间隔。 |
-| 通用命令 | POST | `/api/1/vehicles/{vehicle_id}/commands/{command}` | 常见命令包含 `start_charging`、`stop_charging`、`set_sentry_mode` 等；不同命令可附 JSON 体。 |
-| 充电状态 | GET | `/api/1/vehicles/{vehicle_id}/vehicle_data` | 返回综合数据，包含充电、气候、位置；频率控制在 60 秒以上。 |
-| 驾驶数据 | GET | `/api/1/vehicles/{vehicle_id}/vehicle_data_request/drive_state` | 仅车辆在线时可获取，经度、纬度、速度。 |
-
-> **提示**：不同区域的 Fleet API 域名略有差异（例如北美与欧洲），请以官方文档发布的 host 为准。
-
 ## 请求样例
 ```bash
 curl -X GET \

@@ -11,10 +11,11 @@ import (
 	"tds_server/internal/service"
 	"time"
 
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"strings"
 )
 
 func LoginRedirect(cfg *config.Config) gin.HandlerFunc {
@@ -65,7 +66,7 @@ func LoginCallback(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.Hand
 			},
 			TeslaToken: teslaTokenRepo,
 		}
-
+		fmt.Printf("JWT Token Response: %+v\n", response)
 		if prefersJSON(c) {
 			c.JSON(http.StatusOK, response)
 			return

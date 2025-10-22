@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -22,202 +21,255 @@ import (
 
 const teslaUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 
-// Vehicle inventory endpoints --------------------------------------------------------------------
-// 车辆清单相关端点：负责车辆基础信息与状态拉取。
-
-func GetList(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles")...)
+// VehicleListResponse mirrors the Tesla GET /api/1/vehicles payload.
+type VehicleListResponse struct {
+	// Response holds the fleet vehicle entries in the current page.
+	Response []VehicleSummary `json:"response"`
+	// Pagination describes the current paging cursor returned by Tesla.
+	Pagination PaginationMeta `json:"pagination"`
+	// Count is the number of vehicles returned in this payload.
+	Count int `json:"count"`
 }
 
-func GetVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag")...)
+// VehicleSummary contains high-level metadata for a single vehicle.
+type VehicleSummary struct {
+	// ID is the Tesla Fleet unique identifier for the vehicle.
+	ID int64 `json:"id"`
+	// VehicleID is the vehicle identifier used by mobile access APIs.
+	VehicleID int64 `json:"vehicle_id"`
+	// VIN is the standard Vehicle Identification Number.
+	VIN string `json:"vin"`
+	// Color represents the configured exterior color if present.
+	Color *string `json:"color"`
+	// AccessType indicates the level of access (e.g. OWNER, DRIVER).
+	AccessType string `json:"access_type"`
+	// DisplayName is the user-defined label for the vehicle.
+	DisplayName string `json:"display_name"`
+	// OptionCodes is a comma-separated list of factory option codes.
+	OptionCodes string `json:"option_codes"`
+	// GranularAccess describes fine-grained access controls for the vehicle.
+	GranularAccess VehicleGranularAccess `json:"granular_access"`
+	// Tokens holds command tokens required by legacy vehicle APIs.
+	Tokens []string `json:"tokens"`
+	// State reflects the latest connectivity status (e.g. online, asleep).
+	State string `json:"state"`
+	// InService reports whether the vehicle is currently under service.
+	InService bool `json:"in_service"`
+	// IDS is the string representation of the vehicle id.
+	IDS string `json:"id_s"`
+	// CalendarEnabled indicates if calendar sync is available.
+	CalendarEnabled bool `json:"calendar_enabled"`
+	// APIVersion is the firmware API version exposed via the Fleet API.
+	APIVersion *int `json:"api_version"`
+	// BackseatToken is populated for backseat account invitations.
+	BackseatToken *string `json:"backseat_token"`
+	// BackseatTokenUpdatedAt is the last update timestamp for BackseatToken.
+	BackseatTokenUpdatedAt *string `json:"backseat_token_updated_at"`
 }
 
-func GetVehicleData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "vehicle_data")...)
+// VehicleGranularAccess wraps finer grained controls for shared vehicles.
+type VehicleGranularAccess struct {
+	// HidePrivate hides private data (for example location) from partner apps.
+	HidePrivate bool `json:"hide_private"`
 }
 
-func GetVehicleStates(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "states")...)
+// PaginationMeta tracks paging cursors returned by Tesla APIs.
+type PaginationMeta struct {
+	// Previous is the cursor for the previous page when available.
+	Previous *string `json:"previous"`
+	// Next is the cursor for the next page when available.
+	Next *string `json:"next"`
+	// Current is the index of the current page, starting from 1.
+	Current int `json:"current"`
+	// PerPage is the page size used for the query.
+	PerPage int `json:"per_page"`
+	// Count is the number of entries returned in the current page.
+	Count int `json:"count"`
+	// Pages is the total number of pages available for the query.
+	Pages int `json:"pages"`
 }
 
-func GetVehicleDataRequest(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "vehicle_data_request", ":state")...)
-}
-
-func WakeUpVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", ":vehicle_tag", "wake_up")...)
-}
-
-// Driver and sharing endpoints -------------------------------------------------------------------
-// 驾驶员与车辆共享端点：管理共享邀请与驾驶授权。
-
-func GetVehicleDrivers(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "drivers")...)
-}
-
-func DeleteVehicleDriver(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodDelete, apiSegments("vehicles", ":vehicle_tag", "drivers")...)
-}
-
-func GetVehicleShareInvites(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "invitations")...)
-}
-
-func CreateVehicleShareInvite(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", ":vehicle_tag", "invitations")...)
-}
-
-func RevokeVehicleShareInvite(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", ":vehicle_tag", "invitations", ":invitation_id", "revoke")...)
-}
-
-func RedeemShareInvite(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("invitations", "redeem")...)
-}
-
-// Vehicle capability endpoints -------------------------------------------------------------------
-// 能力查询端点：涵盖附近充电站、固件信息等扩展能力。
-
-func GetVehicleMobileEnabled(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "mobile_enabled")...)
-}
-
-func GetNearbyChargingSites(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "nearby_charging_sites")...)
-}
-
-func GetRecentAlerts(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "recent_alerts")...)
-}
-
-func GetReleaseNotes(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "release_notes")...)
-}
-
-func GetServiceData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "service_data")...)
-}
-
-// Fleet telemetry endpoints ----------------------------------------------------------------------
-// 车队遥测端点：配置/查询第三方遥测服务。
-
-func CreateFleetTelemetryConfig(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", "fleet_telemetry_config")...)
-}
-
-func GetFleetTelemetryConfig(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "fleet_telemetry_config")...)
-}
-
-func DeleteFleetTelemetryConfig(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodDelete, apiSegments("vehicles", ":vehicle_tag", "fleet_telemetry_config")...)
-}
-
-func PostFleetTelemetryConfigJWS(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", "fleet_telemetry_config_jws")...)
-}
-
-func GetFleetTelemetryErrors(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "fleet_telemetry_errors")...)
-}
-
-// Subscription endpoints -------------------------------------------------------------------------
-// 推送订阅端点：维护车辆/设备推送通知订阅列表。
-
-func GetVehicleSubscriptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("vehicle_subscriptions")...)
-}
-
-func SetVehicleSubscriptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicle_subscriptions")...)
-}
-
-func GetSubscriptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiSegments("subscriptions")...)
-}
-
-func SetSubscriptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("subscriptions")...)
-}
-
-func GetEligibleSubscriptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiDXSegments("vehicles", "subscriptions", "eligibility")...)
-}
-
-func GetEligibleUpgrades(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiDXSegments("vehicles", "upgrades", "eligibility")...)
-}
-
-// Misc endpoints ---------------------------------------------------------------------------------
-// 其他车辆相关端点：包含状态汇总、签名指令等。
-
-func PostFleetStatus(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", "fleet_status")...)
-}
-
-func GetVehicleOptions(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiDXSegments("vehicles", "options")...)
-}
-
-func GetWarrantyDetails(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodGet, apiDXSegments("warranty", "details")...)
-}
-
-func SendSignedVehicleCommand(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
-	return vehicleEndpointHandler(cfg, tokenRepo, http.MethodPost, apiSegments("vehicles", ":vehicle_tag", "signed_command")...)
-}
-
-// Shared proxy helpers ---------------------------------------------------------------------------
-// 通用代理工具：统一处理路径解析、令牌刷新与请求透传。
-
-func vehicleEndpointHandler(cfg *config.Config, tokenRepo *repository.TokenRepo, method string, segments ...string) gin.HandlerFunc {
+// ListVehicles proxies Tesla GET /api/1/vehicles and documents the response payload.
+func ListVehicles(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
+	proxy := newTeslaProxy(cfg, tokenRepo)
 	return func(c *gin.Context) {
-		path, err := resolveTeslaPath(c, segments...)
+		query := buildVehicleListQuery(c)
+		var payload VehicleListResponse
+		status, err := proxy.JSON(c, http.MethodGet, apiSegments("vehicles"), query, nil, nil, &payload)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			respondWithError(c, status, err)
 			return
 		}
-
-		body, err := readRequestBody(c, method)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		proxyTeslaRequest(c, cfg, tokenRepo, method, path, c.Request.URL.Query(), body, nil)
+		c.JSON(status, payload)
 	}
 }
 
-func proxyTeslaRequest(
+// GetVehicle proxies Tesla GET /api/1/vehicles/{vehicle_tag} returning a single vehicle record.
+func GetVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
+	proxy := newTeslaProxy(cfg, tokenRepo)
+	return func(c *gin.Context) {
+		var payload VehicleResponse
+		status, err := proxy.JSON(c, http.MethodGet, apiSegments("vehicles", ":vehicle_tag"), nil, nil, nil, &payload)
+		if err != nil {
+			respondWithError(c, status, err)
+			return
+		}
+		c.JSON(status, payload)
+	}
+}
+
+// VehicleResponse wraps a single vehicle summary payload.
+type VehicleResponse struct {
+	Response VehicleSummary `json:"response"`
+}
+
+// VehicleDataResponse mirrors Tesla GET /api/1/vehicles/{vehicle_tag}/vehicle_data payload.
+type VehicleDataResponse struct {
+	Response VehicleData `json:"response"`
+}
+
+// VehicleData aggregates summary information alongside detailed vehicle states.
+type VehicleData struct {
+	VehicleSummary
+	// UserID is the Tesla account identifier that owns the vehicle.
+	UserID int64 `json:"user_id"`
+	// UserVehicleBoundAt indicates when the user gained access to this vehicle.
+	UserVehicleBoundAt *string `json:"user_vehicle_bound_at"`
+	// ChargeState contains live charging information (voltage, current, limits).
+	ChargeState map[string]any `json:"charge_state"`
+	// ClimateState contains HVAC status such as temperatures and fan levels.
+	ClimateState map[string]any `json:"climate_state"`
+	// ClosuresState tracks door, window and trunk statuses.
+	ClosuresState map[string]any `json:"closures_state"`
+	// DriveState contains vehicle movement, heading and speed information.
+	DriveState map[string]any `json:"drive_state"`
+	// GUISettings reflects unit preferences for distance, time and temperature.
+	GUISettings map[string]any `json:"gui_settings"`
+	// LocationData holds precise latitude and longitude coordinates.
+	LocationData map[string]any `json:"location_data"`
+	// ChargeScheduleData reports scheduled charging configuration.
+	ChargeScheduleData map[string]any `json:"charge_schedule_data"`
+	// PreconditioningScheduleData reports scheduled HVAC preconditioning.
+	PreconditioningScheduleData map[string]any `json:"preconditioning_schedule_data"`
+	// VehicleConfig lists hardware configuration such as trim, wheels and software packages.
+	VehicleConfig map[string]any `json:"vehicle_config"`
+	// VehicleState contains alarms, sentry mode, odometer and window/door sensors.
+	VehicleState map[string]any `json:"vehicle_state"`
+	// VehicleDataCombo is populated when requesting aggregated state bundles.
+	VehicleDataCombo map[string]any `json:"vehicle_data_combo"`
+}
+
+// VehicleDriverListResponse mirrors Tesla GET /api/1/vehicles/{vehicle_tag}/drivers payload.
+type VehicleDriverListResponse struct {
+	Response []VehicleDriver `json:"response"`
+	Count    int             `json:"count"`
+}
+
+// VehicleDriver captures each permitted driver entry.
+type VehicleDriver struct {
+	MyTeslaUniqueID int64                 `json:"my_tesla_unique_id"`
+	UserID          int64                 `json:"user_id"`
+	UserIDS         string                `json:"user_id_s"`
+	VaultUUID       string                `json:"vault_uuid"`
+	DriverFirstName string                `json:"driver_first_name"`
+	DriverLastName  string                `json:"driver_last_name"`
+	GranularAccess  VehicleGranularAccess `json:"granular_access"`
+	ActivePubKeys   []string              `json:"active_pubkeys"`
+	PublicKey       string                `json:"public_key"`
+}
+
+// GetVehicleData proxies Tesla GET /api/1/vehicles/{vehicle_tag}/vehicle_data for real-time state.
+func GetVehicleData(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
+	proxy := newTeslaProxy(cfg, tokenRepo)
+	return func(c *gin.Context) {
+		query := buildVehicleDataQuery(c)
+		var payload VehicleDataResponse
+		status, err := proxy.JSON(c, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "vehicle_data"), query, nil, nil, &payload)
+		if err != nil {
+			respondWithError(c, status, err)
+			return
+		}
+		c.JSON(status, payload)
+	}
+}
+
+// GetVehicleDrivers proxies Tesla GET /api/1/vehicles/{vehicle_tag}/drivers to list authorized drivers.
+func GetVehicleDrivers(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
+	proxy := newTeslaProxy(cfg, tokenRepo)
+	return func(c *gin.Context) {
+		var payload VehicleDriverListResponse
+		status, err := proxy.JSON(c, http.MethodGet, apiSegments("vehicles", ":vehicle_tag", "drivers"), nil, nil, nil, &payload)
+		if err != nil {
+			respondWithError(c, status, err)
+			return
+		}
+		c.JSON(status, payload)
+	}
+}
+
+type teslaProxy struct {
+	cfg       *config.Config
+	tokenRepo *repository.TokenRepo
+}
+
+func newTeslaProxy(cfg *config.Config, tokenRepo *repository.TokenRepo) *teslaProxy {
+	return &teslaProxy{
+		cfg:       cfg,
+		tokenRepo: tokenRepo,
+	}
+}
+
+// JSON performs a Tesla API request against the provided path segments and decodes the JSON payload.
+func (p *teslaProxy) JSON(
 	c *gin.Context,
-	cfg *config.Config,
-	tokenRepo *repository.TokenRepo,
+	method string,
+	pathSegments []string,
+	query url.Values,
+	body []byte,
+	headers map[string]string,
+	dest any,
+) (int, error) {
+	path, err := resolveTeslaPath(c, pathSegments...)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+
+	resp, status, err := p.do(c, method, path, query, body, headers)
+	if err != nil {
+		return status, err
+	}
+
+	if err := json.Unmarshal(resp.Body(), dest); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("decode Tesla response: %w", err)
+	}
+
+	return resp.StatusCode(), nil
+}
+
+func (p *teslaProxy) do(
+	c *gin.Context,
 	method string,
 	path string,
 	query url.Values,
 	body []byte,
 	headers map[string]string,
-) {
+) (*resty.Response, int, error) {
 	userID, ok := middleware.UserIDFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user is not authenticated"})
-		return
+		return nil, http.StatusUnauthorized, fmt.Errorf("user is not authenticated")
 	}
 
-	token, err := tokenRepo.GetByUserID(userID)
+	token, err := p.tokenRepo.GetByUserID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, http.StatusInternalServerError, err
 	}
 	if token == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user token not found"})
-		return
+		return nil, http.StatusUnauthorized, fmt.Errorf("user token not found")
 	}
 
-	if token, err = ensureValidToken(cfg, tokenRepo, userID, token); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
-		return
+	token, err = ensureValidToken(p.cfg, p.tokenRepo, userID, token)
+	if err != nil {
+		return nil, http.StatusUnauthorized, fmt.Errorf("token refresh failed: %w", err)
 	}
 
 	sanitizedQuery := sanitizeQuery(query)
@@ -251,7 +303,7 @@ func proxyTeslaRequest(
 		}
 	}
 
-	requestURL := buildTeslaURL(cfg.TeslaAPIURL, path)
+	requestURL := buildTeslaURL(p.cfg.TeslaAPIURL, path)
 
 	makeRequest := func(accessToken string) (*resty.Response, error) {
 		req := client.R()
@@ -259,7 +311,7 @@ func proxyTeslaRequest(
 		for k, v := range headerValues {
 			req.SetHeader(k, v)
 		}
-		if len(sanitizedQuery) > 0 {
+		if sanitizedQuery != nil {
 			req.SetQueryString(sanitizedQuery.Encode())
 		}
 		if len(body) > 0 {
@@ -270,47 +322,62 @@ func proxyTeslaRequest(
 
 	resp, err := makeRequest(token.AccessToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, http.StatusInternalServerError, err
 	}
 
 	if resp.StatusCode() == http.StatusUnauthorized {
-		token, err = refreshUserToken(cfg, tokenRepo, userID, token)
+		token, err = refreshUserToken(p.cfg, p.tokenRepo, userID, token)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token refresh failed: " + err.Error()})
-			return
+			return nil, http.StatusUnauthorized, fmt.Errorf("token refresh failed: %w", err)
 		}
 
 		resp, err = makeRequest(token.AccessToken)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			return nil, http.StatusInternalServerError, err
 		}
 		if resp.StatusCode() == http.StatusUnauthorized {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized after token refresh"})
-			return
+			return nil, http.StatusUnauthorized, fmt.Errorf("unauthorized after token refresh")
 		}
 	}
 
 	if resp.StatusCode() >= http.StatusBadRequest {
-		c.JSON(resp.StatusCode(), gin.H{"error": resp.String()})
-		return
+		return nil, resp.StatusCode(), fmt.Errorf(resp.String())
 	}
 
-	contentType := resp.Header().Get("Content-Type")
-	if contentType == "" {
-		contentType = "application/json"
+	return resp, resp.StatusCode(), nil
+}
+
+func respondWithError(c *gin.Context, status int, err error) {
+	c.JSON(status, gin.H{"error": err.Error()})
+}
+
+func buildVehicleListQuery(c *gin.Context) url.Values {
+	query := url.Values{}
+	if page := strings.TrimSpace(c.Query("page")); page != "" {
+		query.Set("page", page)
 	}
-	c.Data(resp.StatusCode(), contentType, resp.Body())
+	if perPage := strings.TrimSpace(c.Query("per_page")); perPage != "" {
+		query.Set("per_page", perPage)
+	}
+	if len(query) == 0 {
+		return nil
+	}
+	return query
+}
+
+func buildVehicleDataQuery(c *gin.Context) url.Values {
+	query := url.Values{}
+	if endpoints := strings.TrimSpace(c.Query("endpoints")); endpoints != "" {
+		query.Set("endpoints", endpoints)
+	}
+	if len(query) == 0 {
+		return nil
+	}
+	return query
 }
 
 func apiSegments(segments ...string) []string {
 	base := []string{"api", "1"}
-	return append(base, segments...)
-}
-
-func apiDXSegments(segments ...string) []string {
-	base := []string{"api", "1", "dx"}
 	return append(base, segments...)
 }
 
@@ -329,24 +396,6 @@ func resolveTeslaPath(c *gin.Context, segments ...string) (string, error) {
 		resolved = append(resolved, segment)
 	}
 	return "/" + strings.Join(resolved, "/"), nil
-}
-
-func readRequestBody(c *gin.Context, method string) ([]byte, error) {
-	if strings.EqualFold(method, http.MethodGet) {
-		return nil, nil
-	}
-	if c.Request.Body == nil {
-		return nil, nil
-	}
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		return nil, err
-	}
-	if len(body) == 0 {
-		return nil, nil
-	}
-	c.Request.Body = io.NopCloser(bytes.NewReader(body))
-	return body, nil
 }
 
 func buildTeslaURL(base, path string) string {

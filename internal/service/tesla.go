@@ -62,7 +62,6 @@ func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) 
 	if err := json.Unmarshal(resp.Body(), &tr); err != nil {
 		return nil, err
 	}
-	fmt.Printf("Tesla token scopes: %s\n", tr.Scope)
 	fmt.Printf("Response: %+s\n", resp.Body())
 	return &tr, nil
 }
