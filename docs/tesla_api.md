@@ -25,6 +25,7 @@
   ```
 - **刷新令牌**：官方文档提供 `grant_type=refresh_token`，需提交刷新令牌与 `client_id`、`client_secret`；项目已在 `service.RefreshToken` 中封装调用。
 - 建议持久化 `access_token`、`refresh_token`、`expires_in`，并在 5 分钟前主动刷新或捕获 `401` 后自动刷新。
+- **客户端回调**：当登录流程在浏览器/WebView 中完成后，`/api/login/callback` 会返回一个 HTML 页面。脚本会尝试通过 `postMessage` 将 JSON 结果写回宿主（WebView 或 `window.opener`），随后跳转到 `tdsclient://auth/callback?payload=<base64(JSON)>`，以便原生客户端拦截自定义协议并解析令牌。
 
 ## 请求样例
 ```bash

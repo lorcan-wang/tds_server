@@ -154,14 +154,27 @@ func renderLoginCallbackHTML(c *gin.Context, payload loginCallbackResponse) erro
 	<h1>登录成功</h1>
 	<p>可以返回应用，页面会在片刻后自动关闭。</p>
 	<script>
+	var __TDSPayloadB64 = %q;
 	(function() {
 		try {
-			var payload = JSON.parse(atob(%q));
+			var payload = JSON.parse(atob(__TDSPayloadB64));
+			var deepLink = "tdsclient://auth/callback?payload=" + encodeURIComponent(__TDSPayloadB64);
 			if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
 				window.ReactNativeWebView.postMessage(JSON.stringify(payload));
 			} else if (window.opener && window.opener.postMessage) {
 				window.opener.postMessage(payload, "*");
 			}
+			setTimeout(function () {
+				try {
+					if (window.location && typeof window.location.replace === "function") {
+						window.location.replace(deepLink);
+					} else {
+						window.location.href = deepLink;
+					}
+				} catch (err) {
+					console.error("Failed to redirect to client scheme", err);
+				}
+			}, 150);
 		} catch (err) {
 			console.error("Failed to deliver login payload", err);
 		}
