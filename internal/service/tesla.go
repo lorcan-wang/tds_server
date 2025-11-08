@@ -11,7 +11,8 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-const defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+const defaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+const teslaMobileUA = "TeslaApp/4.24.0-1505/ios/15.4"
 
 type TeslaTokenResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -41,15 +42,20 @@ func ExchangeCode(cfg *config.Config, code string) (*TeslaTokenResponse, error) 
 
 	client.SetContentLength(true)
 	client.SetHeader("User-Agent", defaultUserAgent)
-	resp, err := client.R().SetBody(map[string]interface{}{
-		"grant_type":    "authorization_code",
-		"client_id":     cfg.TeslaClientID,
-		"client_secret": cfg.TeslaClientSecret,
-		"audience":      cfg.TeslaAPIURL,
-		"code":          code,
-		"redirect_uri":  cfg.TeslaRedirectURI,
-		"scope":         cfg.TeslaPartnerScope,
-	}).Post(cfg.TeslaTokenURL)
+	client.SetHeader("x-tesla-user-agent", teslaMobileUA)
+	client.SetHeader("Referer", cfg.TeslaAuthURL)
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetFormData(map[string]string{
+			"grant_type":    "authorization_code",
+			"client_id":     cfg.TeslaClientID,
+			"client_secret": cfg.TeslaClientSecret,
+			"audience":      cfg.TeslaAPIURL,
+			"code":          code,
+			"redirect_uri":  cfg.TeslaRedirectURI,
+			"scope":         cfg.TeslaPartnerScope,
+		}).
+		Post(cfg.TeslaTokenURL)
 
 	if err != nil {
 		return nil, err
@@ -71,13 +77,18 @@ func RefreshToken(cfg *config.Config, refreshToken string) (*TeslaTokenResponse,
 
 	client.SetContentLength(true)
 	client.SetHeader("User-Agent", defaultUserAgent)
-	resp, err := client.R().SetBody(map[string]interface{}{
-		"grant_type":    "refresh_token",
-		"client_id":     cfg.TeslaClientID,
-		"client_secret": cfg.TeslaClientSecret,
-		"audience":      cfg.TeslaAPIURL,
-		"refresh_token": refreshToken,
-	}).Post(cfg.TeslaTokenURL)
+	client.SetHeader("x-tesla-user-agent", teslaMobileUA)
+	client.SetHeader("Referer", cfg.TeslaAuthURL)
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetFormData(map[string]string{
+			"grant_type":    "refresh_token",
+			"client_id":     cfg.TeslaClientID,
+			"client_secret": cfg.TeslaClientSecret,
+			"audience":      cfg.TeslaAPIURL,
+			"refresh_token": refreshToken,
+		}).
+		Post(cfg.TeslaTokenURL)
 	if err != nil {
 		return nil, err
 	}

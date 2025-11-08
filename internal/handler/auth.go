@@ -159,22 +159,26 @@ func renderLoginCallbackHTML(c *gin.Context, payload loginCallbackResponse) erro
 		try {
 			var payload = JSON.parse(atob(__TDSPayloadB64));
 			var deepLink = "tdsclient://auth/callback?payload=" + encodeURIComponent(__TDSPayloadB64);
+			var shouldDeepLink = true;
 			if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
 				window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+				shouldDeepLink = false;
 			} else if (window.opener && window.opener.postMessage) {
 				window.opener.postMessage(payload, "*");
 			}
-			setTimeout(function () {
-				try {
-					if (window.location && typeof window.location.replace === "function") {
-						window.location.replace(deepLink);
-					} else {
-						window.location.href = deepLink;
+			if (shouldDeepLink) {
+				setTimeout(function () {
+					try {
+						if (window.location && typeof window.location.replace === "function") {
+							window.location.replace(deepLink);
+						} else {
+							window.location.href = deepLink;
+						}
+					} catch (err) {
+						console.error("Failed to redirect to client scheme", err);
 					}
-				} catch (err) {
-					console.error("Failed to redirect to client scheme", err);
-				}
-			}, 150);
+				}, 150);
+			}
 		} catch (err) {
 			console.error("Failed to deliver login payload", err);
 		}
