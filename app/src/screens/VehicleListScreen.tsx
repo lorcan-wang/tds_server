@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useEffect } from 'react';
+import { useCallback, useLayoutEffect, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,16 +14,18 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import VehicleCard from '@components/VehicleCard';
-import { useVehiclesQuery, fetchVehicleData } from '@api/vehicle';
+import { useVehiclesQuery, fetchVehicleData, wakeVehicle } from '@api/vehicle';
 import type { RootStackParamList } from '@navigation/index';
 import { useAuthStore } from '@store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 
 const VehicleListScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { data, isLoading, error, refetch, isRefetching } = useVehiclesQuery();
   const debugClear = useAuthStore((state) => state.debugClear);
   const queryClient = useQueryClient();
+  const wokenVehiclesRef = useRef<Set<number>>(new Set());
 
   const handleRefresh = useCallback(() => {
     void refetch();
@@ -41,6 +43,22 @@ const VehicleListScreen = () => {
 
   useEffect(() => {
     if (!data) return;
+    data.forEach((vehicle) => {
+      if (vehicle.state !== 'online' && !wokenVehiclesRef.current.has(vehicle.id)) {
+        wokenVehiclesRef.current.add(vehicle.id);
+        void wakeVehicle(vehicle.id.toString()).catch((err: AxiosError | Error) => {
+          const status =
+            'response' in err && err.response
+              ? `${(err as AxiosError).response?.status}: ${(err as AxiosError).response?.statusText}`
+              : '';
+          const body =
+            'response' in err && (err as AxiosError).response?.data
+              ? JSON.stringify((err as AxiosError).response?.data)
+              : err.message;
+          console.warn(`唤醒车辆失败 ${vehicle.id} ${status}`, body);
+        });
+      }
+    });
     data.forEach((vehicle) => {
       void queryClient.prefetchQuery({
         queryKey: ['vehicle-data', vehicle.id.toString()],

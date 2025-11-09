@@ -39,6 +39,7 @@ func NewRouter(cfg *config.Config, tokenRepo *repository.TokenRepo, partnerSvc *
 		protected.GET("/1/vehicles", handler.ListVehicles(cfg, tokenRepo))
 		protected.GET("/1/vehicles/:vehicle_tag", handler.GetVehicle(cfg, tokenRepo))
 		protected.GET("/1/vehicles/:vehicle_tag/vehicle_data", handler.GetVehicleData(cfg, tokenRepo))
+		protected.POST("/1/vehicles/:vehicle_tag/wake_up", handler.WakeVehicle(cfg, tokenRepo))
 		protected.GET("/1/vehicles/:vehicle_tag/drivers", handler.GetVehicleDrivers(cfg, tokenRepo))
 		protected.POST("/vehicles/:vehicle_tag/command/*command_path", handler.VehicleCommand(cfg, tokenRepo, commandSvc))
 	}

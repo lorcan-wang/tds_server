@@ -544,6 +544,33 @@
 
 > 注：示例数据来源于官方文档，仅用于字段说明；实际取值以线上返回为准。
 
+## POST /api/1/vehicles/{vehicle_tag}/wake_up
+
+- **方法**：POST  
+- **授权范围**：`vehicle_device_data`  
+- **描述**：使用 Tesla Fleet API 唤醒指定车辆。接口会立即向 Tesla 后端发送唤醒请求，成功返回车辆概要信息，若车辆仍处于离线/睡眠状态会返回错误。
+
+### 路径参数
+
+| 参数 | 类型 | 必填 | 说明 | 示例 |
+| ---- | ---- | ---- | ---- | ---- |
+| `vehicle_tag` | string | 是 | 车辆唯一标识，支持 `id`、`id_s` 或 `vin`。 | `100021` |
+
+### 请求体
+
+无。
+
+### 响应体
+
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| `response` | `VehicleSummary` | Tesla 返回的车辆概要信息，字段同上。 |
+
+### 错误示例
+
+- `400 invalid vin`：`vehicle_tag` 无效或未授权访问。
+- `500 vehicle unavailable`：车辆仍处于离线/睡眠状态，需稍后重试或通过官方 App/实体操作唤醒。
+
 ## GET /api/1/vehicles/{vehicle_tag}
 
 - **方法**：GET  

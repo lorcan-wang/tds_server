@@ -30,3 +30,7 @@ export function useVehicleDataQuery(vehicleTag: string) {
     enabled: Boolean(vehicleTag)
   });
 }
+
+export async function wakeVehicle(vehicleTag: string) {
+  await apiClient.post(`/1/vehicles/${vehicleTag}/wake_up`);
+}

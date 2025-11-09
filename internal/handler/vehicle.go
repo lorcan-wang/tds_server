@@ -207,6 +207,20 @@ func GetVehicleDrivers(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.
 	}
 }
 
+// WakeVehicle proxies Tesla POST /api/1/vehicles/{vehicle_tag}/wake_up.
+func WakeVehicle(cfg *config.Config, tokenRepo *repository.TokenRepo) gin.HandlerFunc {
+	proxy := newTeslaProxy(cfg, tokenRepo)
+	return func(c *gin.Context) {
+		var payload map[string]any
+		status, err := proxy.JSON(c, http.MethodPost, apiSegments("vehicles", ":vehicle_tag", "wake_up"), nil, nil, nil, &payload)
+		if err != nil {
+			respondWithError(c, status, err)
+			return
+		}
+		c.JSON(status, payload)
+	}
+}
+
 type teslaProxy struct {
 	cfg       *config.Config
 	tokenRepo *repository.TokenRepo
